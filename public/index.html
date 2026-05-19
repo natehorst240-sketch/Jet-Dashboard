@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>SINGLE ENGINE TURBOPROP — Pilatus PC-12 Dashboard</title>
+  <title>DUAL ENGINE TURBOPROP — King Air Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -175,7 +175,7 @@
 <script>
 Chart.register(ChartDataLabels);
 const DASHBOARD_URL = "data/dashboard.json";
-const INSPECTIONS = [{"name":"600 HOUR OR 12 MONTHS INSPECTION","match":"05 404A AAIP","metric":"hours","warn":30,"crit":7},{"name":"1200 HOUR OR 12 MONTHS INSPECTION","match":"05 405A AAIP","metric":"hours","warn":30,"crit":7},{"name":"300 HOUR OR 12 MONTHS INSPECTION","match":"05 402A AAIP","metric":"hours","warn":30,"crit":25},{"name":"2400 HOUR OR 24 MONTHS INSPECTION","match":"05 406A AAIP","metric":"hours","warn":30,"crit":7},{"name":"ENGINE - 1750 - 2000 HOUR HOT SECTION INSPECTION","match":"71 0021","metric":"hours","warn":30,"crit":7}];
+const INSPECTIONS = [{"name":"PHASE ONE INSPECTION","match":"05 05-25-01","metric":"hours","warn":30,"crit":7},{"name":"PHASE ONE INSPECTION","match":"05-25-01","metric":"hours","warn":30,"crit":7},{"name":"PHASE ONE INSPECTION","match":"05-21-01","metric":"hours","warn":30,"crit":25},{"name":"2400 HOUR OR 24 MONTHS INSPECTION","match":"05 406A AAIP","metric":"hours","warn":30,"crit":7},{"name":"ENGINE - 1750 - 2000 HOUR HOT SECTION INSPECTION","match":"71 0021","metric":"hours","warn":30,"crit":7}];
 const CHART_INSP  = "300 HOUR OR 12 MONTHS INSPECTION";
 const CHART_METRIC = "hours";
 let DASH = null;
