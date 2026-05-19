@@ -136,7 +136,7 @@
   <!-- INSPECTIONS -->
   <div id="tab-inspections" class="tab-content active">
     <div class="chart-panel" id="main-chart-panel" hidden>
-      <div class="chart-panel-title" id="main-chart-title">Hours Remaining — 300 HOUR OR 12 MONTHS INSPECTION</div>
+      <div class="chart-panel-title" id="main-chart-title">Hours Remaining — Next Phase Inspection Due</div>
       <div class="chart-wrap"><canvas id="main-chart"></canvas></div>
     </div>
     <div class="toolbar">
@@ -196,7 +196,7 @@
 Chart.register(ChartDataLabels);
 const DASHBOARD_URL = "data/dashboard.json";
 const INSPECTIONS = [{"name":"PHASE ONE INSPECTION","match":"05 05-25-01","metric":"hours","warn":30,"crit":7},{"name":"PHASE ONE INSPECTION","match":"05-25-01","metric":"hours","warn":30,"crit":7},{"name":"PHASE ONE INSPECTION","match":"05-21-01","metric":"hours","warn":30,"crit":25},{"name":"2400 HOUR OR 24 MONTHS INSPECTION","match":"05 406A AAIP","metric":"hours","warn":30,"crit":7},{"name":"ENGINE - 1750 - 2000 HOUR HOT SECTION INSPECTION","match":"71 0021","metric":"hours","warn":30,"crit":7}];
-const CHART_INSP  = "300 HOUR OR 12 MONTHS INSPECTION";
+const CHART_INSP  = "PHASE";
 const CHART_METRIC = "hours";
 let DASH = null;
 let RAW_COMP = [];
@@ -238,14 +238,23 @@ function classifyHours(h){if(h===null||h===undefined||isNaN(h))return"na";if(h<0
 function renderSummary(items){let overdue=0,critical=0,coming=0,tracked=0;items.forEach(it=>{const sev=classifyItem(it);if(sev==="na")return;tracked++;if(sev==="overdue")overdue++;else if(sev==="critical")critical++;else if(sev==="coming")coming++;});document.getElementById("sum-overdue").textContent=overdue;document.getElementById("sum-critical").textContent=critical;document.getElementById("sum-coming").textContent=coming;document.getElementById("sum-tracked").textContent=tracked;}
 function updateHeader(meta){document.getElementById("hdr-report-date").textContent="REPORT DATE: "+(meta?.report_date||"—");document.getElementById("hdr-generated").textContent="GENERATED: "+(meta?.generated_utc||"—");document.getElementById("ftr-right").textContent="Last update: "+(meta?.generated_utc||"—");}
 function renderMainChart(items){
-  const chartItems = items.filter(it=>safeStr(it.inspection).toUpperCase().includes(CHART_INSP.toUpperCase())).filter(it=>{
+  const matched = items.filter(it=>safeStr(it.inspection).toUpperCase().includes(CHART_INSP.toUpperCase())).filter(it=>{
     if(CHART_METRIC==="weeks") return it.remaining_days!==null&&it.remaining_days!==undefined&&!isNaN(Number(it.remaining_days));
     return it.remaining_hours!==null&&it.remaining_hours!==undefined&&!isNaN(Number(it.remaining_hours));
   });
+  // One bar per aircraft: keep the soonest phase due (smallest signed value,
+  // so past-due negatives still win).
+  const byTail = new Map();
+  matched.forEach(it=>{
+    const v = CHART_METRIC==="weeks" ? Number(it.remaining_days) : Number(it.remaining_hours);
+    const prev = byTail.get(it.tail);
+    if(!prev || v < prev._v) byTail.set(it.tail, {...it, _v:v});
+  });
+  const chartItems = Array.from(byTail.values());
   const panel=document.getElementById("main-chart-panel");
   if(!chartItems.length){panel.hidden=true;return;}
   panel.hidden=false;
-  chartItems.sort((a,b)=>CHART_METRIC==="weeks"?Number(a.remaining_days)-Number(b.remaining_days):Number(a.remaining_hours)-Number(b.remaining_hours));
+  chartItems.sort((a,b)=>a._v-b._v);
   const labels=chartItems.map(it=>it.tail);
   const vals=chartItems.map(it=>CHART_METRIC==="weeks"?parseFloat((Number(it.remaining_days)/7).toFixed(1)):parseFloat(Number(it.remaining_hours).toFixed(1)));
   const colors=vals.map(v=>v<0?"rgba(255,109,0,0.85)":v<=(CHART_METRIC==="weeks"?1:25)?"rgba(255,23,68,0.85)":v<=(CHART_METRIC==="weeks"?4:100)?"rgba(255,171,0,0.85)":"rgba(41,182,246,0.7)");
