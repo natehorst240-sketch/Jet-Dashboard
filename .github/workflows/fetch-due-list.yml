@@ -27,7 +27,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Fetch PC-12 Due List
+      - name: Fetch King Air Due List
         env:
           FLIGHTDOCS_USERNAME: ${{ secrets.FLIGHTDOCS_USERNAME }}
           FLIGHTDOCS_PASSWORD: ${{ secrets.FLIGHTDOCS_PASSWORD }}
