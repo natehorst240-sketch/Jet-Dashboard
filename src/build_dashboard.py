@@ -8,27 +8,53 @@ Organization: DUAL ENGINE TURBOPROP
 import json
 import csv
 import re
+import sys
 from pathlib import Path
 from datetime import datetime, date
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from inspection_calendar import compute_projected_events
+
 # ---- Paths ----------------------------------------------------------------
-BASE_DIR     = Path(__file__).parent.parent
-DATA_DIR     = BASE_DIR / "data"
-DAILY_CSV    = DATA_DIR / "king-air-daily-due-list.csv"
-WEEKLY_CSV   = DATA_DIR / "king-air-long-range.csv"
-HISTORY_JSON = DATA_DIR / "king_air_flight_hours_history.json"
-OUTPUT_JSON  = BASE_DIR / "dist" / "data" / "dashboard.json"
+BASE_DIR        = Path(__file__).parent.parent
+DATA_DIR        = BASE_DIR / "data"
+DAILY_CSV       = DATA_DIR / "king-air-daily-due-list.csv"
+WEEKLY_CSV      = DATA_DIR / "king-air-long-range.csv"
+HISTORY_JSON    = DATA_DIR / "king_air_flight_hours_history.json"
+OUTPUT_JSON     = BASE_DIR / "dist" / "data" / "dashboard.json"
+CALENDAR_EVENTS = BASE_DIR / "dist" / "data" / "calendar_events.json"
 
 # ---- Inspection ATA match strings ----------------------------------------
-# Maps ATA prefix -> display name
+# Maps ATA prefix -> display name. Both the historical "05 05-25-0x" spelling
+# and the current export's "05 -25-0x" spelling are accepted so the dashboard
+# survives Flightdocs export format changes.
 INSPECTION_MAP = {
-    "05 05-25-01": "PHASE ONE INSPECTION",
-    "05 05-25-02": "PHASE TWO INSPECTION",
-    "05 05-25-03": "PHASE THREE INSPECTION",
+    "05 -25-01":    "PHASE ONE INSPECTION",
+    "05 -25-02":    "PHASE TWO INSPECTION",
+    "05 -25-03":    "PHASE THREE INSPECTION",
+    "05 05-25-01":  "PHASE ONE INSPECTION",
+    "05 05-25-02":  "PHASE TWO INSPECTION",
+    "05 05-25-03":  "PHASE THREE INSPECTION",
 }
 
-ATA_PREFIXES = ["05 05-25-01", "05 05-25-02", "05 05-25-03",]
+ATA_PREFIXES = list(INSPECTION_MAP.keys())
+
+# Visual settings for the projected-maintenance calendar
+INSPECTION_COLORS = {
+    "PHASE ONE INSPECTION":   "#00897b",
+    "PHASE TWO INSPECTION":   "#1e88e5",
+    "PHASE THREE INSPECTION": "#8e24aa",
+}
+INSPECTION_DURATION_DAYS = {
+    "PHASE ONE INSPECTION":   2,
+    "PHASE TWO INSPECTION":   2,
+    "PHASE THREE INSPECTION": 3,
+}
+CALENDAR_PALETTE = [
+    "#00897b", "#1e88e5", "#8e24aa", "#e53935",
+    "#fb8c00", "#43a047", "#6d4c41", "#3949ab",
+]
 
 # ---- Component window (hours) --------------------------------------------
 COMPONENT_WINDOW = 200
@@ -282,10 +308,77 @@ def build():
     with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
 
+    # Projected maintenance events (consumed by the WorksCalendar React widget)
+    events = render_calendar_events(aircraft_list)
+    CALENDAR_EVENTS.parent.mkdir(parents=True, exist_ok=True)
+    with open(CALENDAR_EVENTS, "w", encoding="utf-8") as f:
+        json.dump(events, f, indent=2)
+
     print(f"Read:    {DAILY_CSV} ({len(insp_df)} inspection rows)")
     print(f"History: {HISTORY_JSON} ({sum(len(v) for v in history.values())} total snapshots)")
     print(f"Built:   {OUTPUT_JSON} ({len(aircraft_list)} aircraft)")
     print(f"Comps:   {len(components)} within {COMPONENT_WINDOW}h")
+    print(f"Events:  {CALENDAR_EVENTS} ({len(events)} projected events)")
+
+
+def render_calendar_events(aircraft_list):
+    """Translate dashboard aircraft_list -> projected-event dicts for the React UI."""
+    inspection_names = []
+    seen = set()
+    for ac in aircraft_list:
+        for item in ac.get("items", []):
+            name = item.get("inspection")
+            if name and name not in seen:
+                seen.add(name)
+                inspection_names.append(name)
+
+    interval_cfg = []
+    for idx, name in enumerate(inspection_names):
+        interval_cfg.append({
+            "label":  name,
+            "hours":  None,
+            "days":   None,
+            "color":  INSPECTION_COLORS.get(name, CALENDAR_PALETTE[idx % len(CALENDAR_PALETTE)]),
+            "calendar_duration_days": INSPECTION_DURATION_DAYS.get(name, 2),
+        })
+
+    cal_aircraft, flight_hours_stats = [], {}
+    for ac in aircraft_list:
+        intervals = {}
+        for item in ac.get("items", []):
+            name = item.get("inspection")
+            if not name:
+                continue
+            rem_hrs  = item.get("remaining_hours")
+            rem_days = item.get("remaining_days")
+            # Flightdocs exports often duplicate the same inspection name across
+            # multiple rows where only one row carries the real remaining-time
+            # numbers. Merge per-field, keeping the most-urgent (smallest
+            # signed) non-null value so we never erase a real datum with a
+            # later null and so past-due rows still win.
+            bucket = intervals.setdefault(
+                name, {"rem_hrs": None, "rem_days": None, "rem_months": None}
+            )
+            if rem_hrs is not None and (
+                bucket["rem_hrs"] is None or rem_hrs < bucket["rem_hrs"]
+            ):
+                bucket["rem_hrs"] = rem_hrs
+            if rem_days is not None and (
+                bucket["rem_days"] is None or rem_days < bucket["rem_days"]
+            ):
+                bucket["rem_days"] = rem_days
+        cal_aircraft.append({
+            "tail":         ac["tail"],
+            "airframe_hrs": ac.get("airframe_hours"),
+            "intervals":    intervals,
+        })
+        flight_hours_stats[ac["tail"]] = {"avg_daily": ac.get("avg_daily")}
+
+    return compute_projected_events(
+        aircraft_list      = cal_aircraft,
+        flight_hours_stats = flight_hours_stats,
+        interval_cfg       = interval_cfg,
+    )
 
 def _classify(rd, rh, status):
     if rd is not None and not (isinstance(rd, float) and pd.isna(rd)):
