@@ -26,16 +26,25 @@ OUTPUT_JSON     = BASE_DIR / "dist" / "data" / "dashboard.json"
 CALENDAR_EVENTS = BASE_DIR / "dist" / "data" / "calendar_events.json"
 
 # ---- Inspection ATA match strings ----------------------------------------
-# Maps ATA prefix -> display name. Both the historical "05 05-25-0x" spelling
-# and the current export's "05 -25-0x" spelling are accepted so the dashboard
-# survives Flightdocs export format changes.
+# Maps ATA prefix -> display name. The Flightdocs export uses three different
+# ATA schemes for what's logically the same Phase 1/2/3/4 program across the
+# fleet, so all three are accepted here.
 INSPECTION_MAP = {
+    # "05 00X0" scheme (N381HC, N481HC, etc.)
+    "05 0010":      "PHASE ONE INSPECTION",
+    "05 0020":      "PHASE TWO INSPECTION",
+    "05 0030":      "PHASE THREE INSPECTION",
+    "05 0040":      "PHASE FOUR INSPECTION",
+    # "05 -25-0X" scheme (N904KS, N90HG)
     "05 -25-01":    "PHASE ONE INSPECTION",
     "05 -25-02":    "PHASE TWO INSPECTION",
     "05 -25-03":    "PHASE THREE INSPECTION",
+    "05 -25-04":    "PHASE FOUR INSPECTION",
+    # Legacy "05 05-25-0X" spelling
     "05 05-25-01":  "PHASE ONE INSPECTION",
     "05 05-25-02":  "PHASE TWO INSPECTION",
     "05 05-25-03":  "PHASE THREE INSPECTION",
+    "05 05-25-04":  "PHASE FOUR INSPECTION",
 }
 
 ATA_PREFIXES = list(INSPECTION_MAP.keys())
@@ -45,11 +54,13 @@ INSPECTION_COLORS = {
     "PHASE ONE INSPECTION":   "#00897b",
     "PHASE TWO INSPECTION":   "#1e88e5",
     "PHASE THREE INSPECTION": "#8e24aa",
+    "PHASE FOUR INSPECTION":  "#e53935",
 }
 INSPECTION_DURATION_DAYS = {
     "PHASE ONE INSPECTION":   2,
     "PHASE TWO INSPECTION":   2,
     "PHASE THREE INSPECTION": 3,
+    "PHASE FOUR INSPECTION":  4,
 }
 CALENDAR_PALETTE = [
     "#00897b", "#1e88e5", "#8e24aa", "#e53935",
