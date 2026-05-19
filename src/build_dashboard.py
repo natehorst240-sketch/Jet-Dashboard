@@ -307,7 +307,7 @@ def build():
         "meta": {
             "report_date":    report_date,
             "generated_utc":  datetime.utcnow().isoformat(timespec="seconds") + "Z",
-            "fleet_name":     "Pilatus PC-12",
+            "fleet_name":     "Beechcraft King Air",
             "source":         str(DAILY_CSV),
             "aircraft_count": len(aircraft_list),
         },

@@ -205,10 +205,10 @@ async function saveExportDiagnostics(page: Page, reason: string): Promise<void> 
   try {
     await ensureDir(debugDir);
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const screenshotPath = path.join(debugDir, `pc12-export-${reason}-${stamp}.png`);
+    const screenshotPath = path.join(debugDir, `king-air-export-${reason}-${stamp}.png`);
     await page.screenshot({ path: screenshotPath, fullPage: true });
     log(`Saved failure screenshot to ${screenshotPath}`);
-    const htmlPath = path.join(debugDir, `pc12-export-${reason}-${stamp}.html`);
+    const htmlPath = path.join(debugDir, `king-air-export-${reason}-${stamp}.html`);
     await fs.writeFile(htmlPath, await page.content(), 'utf8');
     log(`Saved failure HTML to ${htmlPath}`);
   } catch (err) {
@@ -221,7 +221,7 @@ async function saveExportDiagnostics(page: Page, reason: string): Promise<void> 
 }
 
 async function exportDueList(page: Page): Promise<Download> {
-  log('Navigating to PC-12 due-list page');
+  log('Navigating to King Air due-list page');
   await page.goto(DUE_LIST_URL, { waitUntil: 'domcontentloaded', timeout: 90_000 });
 
   try {
@@ -398,7 +398,7 @@ async function runOnce(): Promise<void> {
   const username = requireCredential('username', ['FLIGHTDOCS_USERNAME', 'FD_USERNAME', 'FLIGHTDOCS_USER']);
   const password = requireCredential('password', ['FLIGHTDOCS_PASSWORD', 'FD_PASSWORD', 'FLIGHTDOCS_PASS']);
 
-  const downloadDir = await fs.mkdtemp(path.join(os.tmpdir(), 'flightdocs-pc12-due-list-'));
+  const downloadDir = await fs.mkdtemp(path.join(os.tmpdir(), 'flightdocs-king-air-due-list-'));
   log(`Download directory: ${downloadDir}`);
 
   const browser = await chromium.launch({ headless: HEADLESS });
