@@ -76,8 +76,12 @@ from datetime import datetime, timedelta
 
 
 def interval_key(iv):
-    """Canonical dict key for an interval: hours int when available, else 'd{days}'."""
-    return iv['hours'] if iv.get('hours') is not None else f"d{iv['days']}"
+    """Canonical dict key for an interval: hours int when available, else 'd{days}', else label."""
+    if iv.get('hours') is not None:
+        return iv['hours']
+    if iv.get('days') is not None:
+        return f"d{iv['days']}"
+    return iv.get('label') or 'unknown'
 
 
 def build_calendar_tab(

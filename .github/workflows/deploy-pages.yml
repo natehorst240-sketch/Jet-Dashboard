@@ -42,6 +42,11 @@ jobs:
           mkdir -p site/data
           cp -R public/. site/
           cp dist/data/dashboard.json site/data/dashboard.json
+          # Overwrite index.html with the build-time version that has the
+          # projected maintenance calendar baked into the Calendar tab.
+          if [ -f dist/index.html ]; then
+            cp dist/index.html site/index.html
+          fi
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

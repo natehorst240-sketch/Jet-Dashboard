@@ -8,9 +8,13 @@ Organization: DUAL ENGINE TURBOPROP
 import json
 import csv
 import re
+import sys
 from pathlib import Path
 from datetime import datetime, date
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from inspection_calendar import build_calendar_tab
 
 # ---- Paths ----------------------------------------------------------------
 BASE_DIR     = Path(__file__).parent.parent
@@ -19,16 +23,40 @@ DAILY_CSV    = DATA_DIR / "king-air-daily-due-list.csv"
 WEEKLY_CSV   = DATA_DIR / "king-air-long-range.csv"
 HISTORY_JSON = DATA_DIR / "king_air_flight_hours_history.json"
 OUTPUT_JSON  = BASE_DIR / "dist" / "data" / "dashboard.json"
+CALENDAR_HTML = BASE_DIR / "dist" / "data" / "calendar_tab.html"
+INDEX_TEMPLATE = BASE_DIR / "public" / "index.html"
+INDEX_OUT = BASE_DIR / "dist" / "index.html"
 
 # ---- Inspection ATA match strings ----------------------------------------
-# Maps ATA prefix -> display name
+# Maps ATA prefix -> display name. Both the historical "05 05-25-0x" spelling
+# and the current export's "05 -25-0x" spelling are accepted so the dashboard
+# survives Flightdocs export format changes.
 INSPECTION_MAP = {
-    "05 05-25-01": "PHASE ONE INSPECTION",
-    "05 05-25-02": "PHASE TWO INSPECTION",
-    "05 05-25-03": "PHASE THREE INSPECTION",
+    "05 -25-01":    "PHASE ONE INSPECTION",
+    "05 -25-02":    "PHASE TWO INSPECTION",
+    "05 -25-03":    "PHASE THREE INSPECTION",
+    "05 05-25-01":  "PHASE ONE INSPECTION",
+    "05 05-25-02":  "PHASE TWO INSPECTION",
+    "05 05-25-03":  "PHASE THREE INSPECTION",
 }
 
-ATA_PREFIXES = ["05 05-25-01", "05 05-25-02", "05 05-25-03",]
+ATA_PREFIXES = list(INSPECTION_MAP.keys())
+
+# Visual settings for the projected-maintenance calendar
+INSPECTION_COLORS = {
+    "PHASE ONE INSPECTION":   "#00897b",
+    "PHASE TWO INSPECTION":   "#1e88e5",
+    "PHASE THREE INSPECTION": "#8e24aa",
+}
+INSPECTION_DURATION_DAYS = {
+    "PHASE ONE INSPECTION":   2,
+    "PHASE TWO INSPECTION":   2,
+    "PHASE THREE INSPECTION": 3,
+}
+CALENDAR_PALETTE = [
+    "#00897b", "#1e88e5", "#8e24aa", "#e53935",
+    "#fb8c00", "#43a047", "#6d4c41", "#3949ab",
+]
 
 # ---- Component window (hours) --------------------------------------------
 COMPONENT_WINDOW = 200
@@ -282,10 +310,81 @@ def build():
     with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
 
+    # Projected maintenance calendar (uses inspection_calendar.py)
+    calendar_html = render_calendar_tab(aircraft_list)
+    CALENDAR_HTML.parent.mkdir(parents=True, exist_ok=True)
+    CALENDAR_HTML.write_text(calendar_html, encoding="utf-8")
+    render_index_html(calendar_html)
+
     print(f"Read:    {DAILY_CSV} ({len(insp_df)} inspection rows)")
     print(f"History: {HISTORY_JSON} ({sum(len(v) for v in history.values())} total snapshots)")
     print(f"Built:   {OUTPUT_JSON} ({len(aircraft_list)} aircraft)")
     print(f"Comps:   {len(components)} within {COMPONENT_WINDOW}h")
+    print(f"Cal:     {CALENDAR_HTML}")
+    print(f"Index:   {INDEX_OUT}")
+
+
+def render_calendar_tab(aircraft_list):
+    """Translate dashboard aircraft_list -> the shape inspection_calendar wants,
+    then ask the calendar module for its self-contained HTML/CSS/JS block."""
+    inspection_names = []
+    seen = set()
+    for ac in aircraft_list:
+        for item in ac.get("items", []):
+            name = item.get("inspection")
+            if name and name not in seen:
+                seen.add(name)
+                inspection_names.append(name)
+
+    interval_cfg = []
+    for idx, name in enumerate(inspection_names):
+        interval_cfg.append({
+            "label":  name,
+            "hours":  None,
+            "days":   None,
+            "color":  INSPECTION_COLORS.get(name, CALENDAR_PALETTE[idx % len(CALENDAR_PALETTE)]),
+            "calendar_duration_days": INSPECTION_DURATION_DAYS.get(name, 2),
+        })
+
+    cal_aircraft, flight_hours_stats = [], {}
+    for ac in aircraft_list:
+        intervals = {}
+        for item in ac.get("items", []):
+            name = item.get("inspection")
+            if not name:
+                continue
+            intervals[name] = {
+                "rem_hrs":    item.get("remaining_hours"),
+                "rem_days":   item.get("remaining_days"),
+                "rem_months": None,
+            }
+        cal_aircraft.append({
+            "tail":         ac["tail"],
+            "airframe_hrs": ac.get("airframe_hours"),
+            "intervals":    intervals,
+        })
+        flight_hours_stats[ac["tail"]] = {"avg_daily": ac.get("avg_daily")}
+
+    return build_calendar_tab(
+        aircraft_list      = cal_aircraft,
+        flight_hours_stats = flight_hours_stats,
+        interval_cfg       = interval_cfg,
+        tracked_tails      = [ac["tail"] for ac in cal_aircraft],
+    )
+
+
+def render_index_html(calendar_html):
+    """Bake the calendar tab into a copy of public/index.html at build time."""
+    if not INDEX_TEMPLATE.exists():
+        print(f"Skip:    index template not found at {INDEX_TEMPLATE}")
+        return
+    template = INDEX_TEMPLATE.read_text(encoding="utf-8")
+    marker = "<!--CALENDAR_TAB_HTML-->"
+    if marker not in template:
+        print(f"Skip:    {marker} not present in {INDEX_TEMPLATE.name}; not writing dist/index.html")
+        return
+    INDEX_OUT.parent.mkdir(parents=True, exist_ok=True)
+    INDEX_OUT.write_text(template.replace(marker, calendar_html), encoding="utf-8")
 
 def _classify(rd, rh, status):
     if rd is not None and not (isinstance(rd, float) and pd.isna(rd)):
