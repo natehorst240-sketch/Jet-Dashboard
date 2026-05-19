@@ -23,12 +23,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build WorksCalendar bundle
+        run: npm run build:web
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pandas
@@ -42,11 +54,9 @@ jobs:
           mkdir -p site/data
           cp -R public/. site/
           cp dist/data/dashboard.json site/data/dashboard.json
-          # Overwrite index.html with the build-time version that has the
-          # projected maintenance calendar baked into the Calendar tab.
-          if [ -f dist/index.html ]; then
-            cp dist/index.html site/index.html
-          fi
+          cp dist/data/calendar_events.json site/data/calendar_events.json
+          cp dist/web/calendar.js site/calendar.js
+          cp dist/web/calendar.css site/calendar.css
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -5,7 +5,14 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
-  "include": ["scripts/**/*.ts"]
+  "include": [
+    "scripts/**/*.ts",
+    "src/web/**/*.ts",
+    "src/web/**/*.tsx",
+    "vite.config.ts"
+  ]
 }

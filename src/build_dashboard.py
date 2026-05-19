@@ -14,18 +14,16 @@ from datetime import datetime, date
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from inspection_calendar import build_calendar_tab
+from inspection_calendar import compute_projected_events
 
 # ---- Paths ----------------------------------------------------------------
-BASE_DIR     = Path(__file__).parent.parent
-DATA_DIR     = BASE_DIR / "data"
-DAILY_CSV    = DATA_DIR / "king-air-daily-due-list.csv"
-WEEKLY_CSV   = DATA_DIR / "king-air-long-range.csv"
-HISTORY_JSON = DATA_DIR / "king_air_flight_hours_history.json"
-OUTPUT_JSON  = BASE_DIR / "dist" / "data" / "dashboard.json"
-CALENDAR_HTML = BASE_DIR / "dist" / "data" / "calendar_tab.html"
-INDEX_TEMPLATE = BASE_DIR / "public" / "index.html"
-INDEX_OUT = BASE_DIR / "dist" / "index.html"
+BASE_DIR        = Path(__file__).parent.parent
+DATA_DIR        = BASE_DIR / "data"
+DAILY_CSV       = DATA_DIR / "king-air-daily-due-list.csv"
+WEEKLY_CSV      = DATA_DIR / "king-air-long-range.csv"
+HISTORY_JSON    = DATA_DIR / "king_air_flight_hours_history.json"
+OUTPUT_JSON     = BASE_DIR / "dist" / "data" / "dashboard.json"
+CALENDAR_EVENTS = BASE_DIR / "dist" / "data" / "calendar_events.json"
 
 # ---- Inspection ATA match strings ----------------------------------------
 # Maps ATA prefix -> display name. Both the historical "05 05-25-0x" spelling
@@ -310,23 +308,21 @@ def build():
     with open(OUTPUT_JSON, "w", encoding="utf-8") as f:
         json.dump(out, f, indent=2)
 
-    # Projected maintenance calendar (uses inspection_calendar.py)
-    calendar_html = render_calendar_tab(aircraft_list)
-    CALENDAR_HTML.parent.mkdir(parents=True, exist_ok=True)
-    CALENDAR_HTML.write_text(calendar_html, encoding="utf-8")
-    render_index_html(calendar_html)
+    # Projected maintenance events (consumed by the WorksCalendar React widget)
+    events = render_calendar_events(aircraft_list)
+    CALENDAR_EVENTS.parent.mkdir(parents=True, exist_ok=True)
+    with open(CALENDAR_EVENTS, "w", encoding="utf-8") as f:
+        json.dump(events, f, indent=2)
 
     print(f"Read:    {DAILY_CSV} ({len(insp_df)} inspection rows)")
     print(f"History: {HISTORY_JSON} ({sum(len(v) for v in history.values())} total snapshots)")
     print(f"Built:   {OUTPUT_JSON} ({len(aircraft_list)} aircraft)")
     print(f"Comps:   {len(components)} within {COMPONENT_WINDOW}h")
-    print(f"Cal:     {CALENDAR_HTML}")
-    print(f"Index:   {INDEX_OUT}")
+    print(f"Events:  {CALENDAR_EVENTS} ({len(events)} projected events)")
 
 
-def render_calendar_tab(aircraft_list):
-    """Translate dashboard aircraft_list -> the shape inspection_calendar wants,
-    then ask the calendar module for its self-contained HTML/CSS/JS block."""
+def render_calendar_events(aircraft_list):
+    """Translate dashboard aircraft_list -> projected-event dicts for the React UI."""
     inspection_names = []
     seen = set()
     for ac in aircraft_list:
@@ -365,26 +361,11 @@ def render_calendar_tab(aircraft_list):
         })
         flight_hours_stats[ac["tail"]] = {"avg_daily": ac.get("avg_daily")}
 
-    return build_calendar_tab(
+    return compute_projected_events(
         aircraft_list      = cal_aircraft,
         flight_hours_stats = flight_hours_stats,
         interval_cfg       = interval_cfg,
-        tracked_tails      = [ac["tail"] for ac in cal_aircraft],
     )
-
-
-def render_index_html(calendar_html):
-    """Bake the calendar tab into a copy of public/index.html at build time."""
-    if not INDEX_TEMPLATE.exists():
-        print(f"Skip:    index template not found at {INDEX_TEMPLATE}")
-        return
-    template = INDEX_TEMPLATE.read_text(encoding="utf-8")
-    marker = "<!--CALENDAR_TAB_HTML-->"
-    if marker not in template:
-        print(f"Skip:    {marker} not present in {INDEX_TEMPLATE.name}; not writing dist/index.html")
-        return
-    INDEX_OUT.parent.mkdir(parents=True, exist_ok=True)
-    INDEX_OUT.write_text(template.replace(marker, calendar_html), encoding="utf-8")
 
 def _classify(rd, rh, status):
     if rd is not None and not (isinstance(rd, float) and pd.isna(rd)):
