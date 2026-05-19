@@ -99,8 +99,7 @@ def compute_projected_events(aircraft_list, flight_hours_stats, interval_cfg=Non
         if ac['airframe_hrs'] is None:
             continue
         avg_daily = (flight_hours_stats.get(tail) or {}).get('avg_daily')
-        if not avg_daily or avg_daily <= 0:
-            continue
+        has_usage = bool(avg_daily) and avg_daily > 0
 
         for interval in list(INTERVAL_COLOR.keys()):
             v = ac['intervals'].get(interval)
@@ -123,16 +122,23 @@ def compute_projected_events(aircraft_list, flight_hours_stats, interval_cfg=Non
 
             if rem_hrs is not None:
                 if rem_hrs < 0:
+                    # Past-due hours don't need avg_daily — they're already due.
                     due_candidates.append(today)
                     due_reasons.append(('hours_past_due', rem_hrs, 0.0))
-                else:
+                elif has_usage:
                     days_away = rem_hrs / avg_daily
                     due_candidates.append(today + timedelta(days=days_away))
                     due_reasons.append(('hours_remaining', rem_hrs, days_away))
+                # else: positive hours but no utilization history yet — fall
+                # through and let the calendar-based candidate (if any)
+                # project this interval on its own.
 
             if total_days is not None:
                 due_candidates.append(today + timedelta(days=total_days))
                 due_reasons.append(('days_remaining', total_days, total_days))
+
+            if not due_candidates:
+                continue
 
             due_idx = min(range(len(due_candidates)), key=lambda idx: due_candidates[idx])
             due = due_candidates[due_idx]

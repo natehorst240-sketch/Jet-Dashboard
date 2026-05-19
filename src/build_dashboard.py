@@ -349,11 +349,24 @@ def render_calendar_events(aircraft_list):
             name = item.get("inspection")
             if not name:
                 continue
-            intervals[name] = {
-                "rem_hrs":    item.get("remaining_hours"),
-                "rem_days":   item.get("remaining_days"),
-                "rem_months": None,
-            }
+            rem_hrs  = item.get("remaining_hours")
+            rem_days = item.get("remaining_days")
+            # Flightdocs exports often duplicate the same inspection name across
+            # multiple rows where only one row carries the real remaining-time
+            # numbers. Merge per-field, keeping the most-urgent (smallest
+            # signed) non-null value so we never erase a real datum with a
+            # later null and so past-due rows still win.
+            bucket = intervals.setdefault(
+                name, {"rem_hrs": None, "rem_days": None, "rem_months": None}
+            )
+            if rem_hrs is not None and (
+                bucket["rem_hrs"] is None or rem_hrs < bucket["rem_hrs"]
+            ):
+                bucket["rem_hrs"] = rem_hrs
+            if rem_days is not None and (
+                bucket["rem_days"] is None or rem_days < bucket["rem_days"]
+            ):
+                bucket["rem_days"] = rem_days
         cal_aircraft.append({
             "tail":         ac["tail"],
             "airframe_hrs": ac.get("airframe_hours"),
