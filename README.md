@@ -1,14 +1,14 @@
-# Beechcraft King Air Fleet Maintenance Dashboard
+# Jet Fleet Maintenance Dashboard
 **DUAL ENGINE TURBOPROP**
 
-Live dashboard: https://natehorst240-sketch.github.io/King-Air-Dashboard/
+Live dashboard: https://natehorst240-sketch.github.io/Jet-Dashboard/
 
 ## Repository layout
 ```
-King-Air-Dashboard/
+Jet-Dashboard/
 ├── data/
-│   ├── king-air-daily-due-list.csv          ← Flightdocs daily export
-│   └── king_air_flight_hours_history.json   ← auto-generated snapshot history
+│   ├── jet-due-list.csv                     ← Flightdocs daily export
+│   └── jet_flight_hours_history.json        ← auto-generated snapshot history
 ├── public/
 │   └── index.html                           ← static dashboard shell
 ├── src/
@@ -16,7 +16,7 @@ King-Air-Dashboard/
 │   ├── inspection_calendar.py               ← projected next-due math
 │   └── web/calendar-app.tsx                 ← WorksCalendar React widget
 ├── scripts/
-│   └── fetch-king-air-due-list.ts           ← Playwright Flightdocs scraper
+│   └── fetch-jet-due-list.ts                ← Playwright Flightdocs scraper
 ├── vite.config.ts                           ← bundles the calendar widget
 └── .github/workflows/                       ← daily fetch + Pages deploy
 ```
@@ -31,7 +31,7 @@ Settings → Pages → Source: **GitHub Actions** (not "Deploy from a branch").
 
 ### 3. Flightdocs credentials
 Add `FLIGHTDOCS_USERNAME` and `FLIGHTDOCS_PASSWORD` as repository secrets so the
-scheduled `Fetch King Air Due List` workflow can pull the daily export.
+scheduled `Fetch Jet Due List` workflow can pull the daily export.
 
 ### 4. Local dev
 ```
@@ -42,18 +42,25 @@ python src/build_dashboard.py
 
 ## Inspections tracked
 
-Phase Operation Package inspections, normalized across the three ATA schemes
-the Flightdocs export uses:
+Inspection rows whose `ATA and Code` matches one of these prefixes are tracked:
 
-| Phase | `05 00X0` scheme | `05 -25-0X` scheme |
-|-------|------------------|--------------------|
-| 1     | `05 0010`        | `05 -25-01`        |
-| 2     | `05 0020`        | `05 -25-02`        |
-| 3     | `05 0030`        | `05 -25-03`        |
-| 4     | `05 0040`        | `05 -25-04`        |
+| ATA code   | Name        |
+|------------|-------------|
+| `05 12-13` | Document 13 |
+| `05 12-11` | Document 11 |
+| `05 12-07` | Document 7  |
+| `05 12-19` | Document 19 |
+| `05 12-26` | Document 26 |
+| `04 12-MI` | Document MI |
+| `05 12-25` | Document 25 |
+| `04 12-MA` | Document MA |
+| `05 12-23` | Document 23 |
+| `05 12-34` | Document 34 |
+| `05 12-21` | Document 21 |
+| `04 12-MM` | Document MM |
 
 ## Inspections tab top chart
-Per-aircraft horizontal bar chart of **hours remaining until the next Phase
+Per-aircraft horizontal bar chart of **hours remaining until the next
 inspection due**, sorted least → most, color-coded by severity (overdue / critical
 / coming / OK).
 

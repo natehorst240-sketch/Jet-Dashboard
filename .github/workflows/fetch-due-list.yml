@@ -1,4 +1,4 @@
-name: King Air Due List
+name: Jet Due List
 
 on:
   schedule:
@@ -27,7 +27,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Fetch King Air Due List
+      - name: Fetch Jet Due List
         env:
           FLIGHTDOCS_USERNAME: ${{ secrets.FLIGHTDOCS_USERNAME }}
           FLIGHTDOCS_PASSWORD: ${{ secrets.FLIGHTDOCS_PASSWORD }}

@@ -1,10 +1,10 @@
 {
-  "name": "king-air-dashboard-scripts",
+  "name": "jet-dashboard-scripts",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "fetch-due-list": "tsx scripts/fetch-king-air-due-list.ts",
+    "fetch-due-list": "tsx scripts/fetch-jet-due-list.ts",
     "build:web": "vite build"
   },
   "dependencies": {
