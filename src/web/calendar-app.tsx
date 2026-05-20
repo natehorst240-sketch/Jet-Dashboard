@@ -60,7 +60,7 @@ class CalendarErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[king-air-calendar] render error', error, info);
+    console.error('[jet-calendar] render error', error, info);
   }
 
   render() {
@@ -186,19 +186,19 @@ function formatDate(ymd: string): string {
 // Lazy mount. WorksCalendar measures its container on first render; if mounted
 // while the Calendar tab is display:none it sees 0×0 and never recovers, so
 // we hold off until the tab is actually visible (host page calls
-// window.mountKingAirCalendar from switchTab).
+// window.mountJetCalendar from switchTab).
 // ---------------------------------------------------------------------------
 
 let root: Root | null = null;
 
-function mountKingAirCalendar(): void {
+function mountJetCalendar(): void {
   if (root) return;
   const rootEl = document.getElementById('works-calendar-root');
   if (!rootEl) {
-    console.warn('[king-air-calendar] mount target #works-calendar-root not found');
+    console.warn('[jet-calendar] mount target #works-calendar-root not found');
     return;
   }
-  console.log('[king-air-calendar] mounting');
+  console.log('[jet-calendar] mounting');
   root = createRoot(rootEl);
   root.render(
     <CalendarErrorBoundary>
@@ -209,16 +209,16 @@ function mountKingAirCalendar(): void {
 
 declare global {
   interface Window {
-    mountKingAirCalendar?: () => void;
+    mountJetCalendar?: () => void;
   }
 }
 
 if (typeof window !== 'undefined') {
-  window.mountKingAirCalendar = mountKingAirCalendar;
+  window.mountJetCalendar = mountJetCalendar;
   // If the page loads with the Calendar tab already active (e.g. someone deep-
   // links there later), mount immediately.
   const tab = document.getElementById('tab-calendar');
   if (tab && tab.classList.contains('active')) {
-    mountKingAirCalendar();
+    mountJetCalendar();
   }
 }

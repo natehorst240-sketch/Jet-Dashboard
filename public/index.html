@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DUAL ENGINE TURBOPROP — King Air Dashboard</title>
+  <title>DUAL ENGINE TURBOPROP — Jet Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -105,7 +105,7 @@
 <header>
   <div>
     <div class="logo">DUAL <span>ENGINE</span></div>
-    <div class="subtitle">King Air Fleet — Inspections &amp; Due List</div>
+    <div class="subtitle">Jet Fleet — Inspections &amp; Due List</div>
   </div>
   <div class="header-meta">
     <div class="date" id="hdr-report-date">REPORT DATE: —</div>
@@ -136,7 +136,7 @@
   <!-- INSPECTIONS -->
   <div id="tab-inspections" class="tab-content active">
     <div class="chart-panel" id="main-chart-panel" hidden>
-      <div class="chart-panel-title" id="main-chart-title">Hours Remaining — Next Phase Inspection Due</div>
+      <div class="chart-panel-title" id="main-chart-title">Hours Remaining — Next Inspection Due</div>
       <div class="chart-wrap"><canvas id="main-chart"></canvas></div>
     </div>
     <div class="toolbar">
@@ -184,7 +184,7 @@
   </div>
 </main>
 <footer>
-  <span>DUAL ENGINE TURBOPROP — King Air Dashboard</span>
+  <span>DUAL ENGINE TURBOPROP — Jet Dashboard</span>
   <span id="ftr-right">—</span>
 </footer>
 //<!-- Merlin -->
@@ -195,8 +195,8 @@
 <script>
 Chart.register(ChartDataLabels);
 const DASHBOARD_URL = "data/dashboard.json";
-const INSPECTIONS = [{"name":"PHASE ONE INSPECTION","match":"05 05-25-01","metric":"hours","warn":30,"crit":7},{"name":"PHASE ONE INSPECTION","match":"05-25-01","metric":"hours","warn":30,"crit":7},{"name":"PHASE ONE INSPECTION","match":"05-21-01","metric":"hours","warn":30,"crit":25},{"name":"2400 HOUR OR 24 MONTHS INSPECTION","match":"05 406A AAIP","metric":"hours","warn":30,"crit":7},{"name":"ENGINE - 1750 - 2000 HOUR HOT SECTION INSPECTION","match":"71 0021","metric":"hours","warn":30,"crit":7}];
-const CHART_INSP  = "PHASE";
+const INSPECTIONS = [{"name":"Document 13","match":"05 12-13","metric":"hours","warn":30,"crit":7},{"name":"Document 11","match":"05 12-11","metric":"hours","warn":30,"crit":7},{"name":"Document 7","match":"05 12-07","metric":"hours","warn":30,"crit":7},{"name":"Document 19","match":"05 12-19","metric":"hours","warn":30,"crit":7},{"name":"Document 26","match":"05 12-26","metric":"hours","warn":30,"crit":7},{"name":"Document MI","match":"04 12-MI","metric":"hours","warn":30,"crit":7},{"name":"Document 25","match":"05 12-25","metric":"hours","warn":30,"crit":7},{"name":"Document MA","match":"04 12-MA","metric":"hours","warn":30,"crit":7},{"name":"Document 23","match":"05 12-23","metric":"hours","warn":30,"crit":7},{"name":"Document 34","match":"05 12-34","metric":"hours","warn":30,"crit":7},{"name":"Document 21","match":"05 12-21","metric":"hours","warn":30,"crit":7},{"name":"Document MM","match":"04 12-MM","metric":"hours","warn":30,"crit":7}];
+const CHART_INSP  = "Document";
 const CHART_METRIC = "hours";
 let DASH = null;
 let RAW_COMP = [];
@@ -215,7 +215,7 @@ function switchTab(name,btn){
   if(name==="utilization") renderUtilization();
   if(name==="components")  renderComponents();
   if(name==="calendar"){
-    if(typeof window.mountKingAirCalendar==="function") window.mountKingAirCalendar();
+    if(typeof window.mountJetCalendar==="function") window.mountJetCalendar();
     window.dispatchEvent(new Event("resize"));
   }
 }

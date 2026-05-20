@@ -22,7 +22,7 @@ export default defineConfig({
     sourcemap: false,
     lib: {
       entry: resolve(__dirname, 'src/web/calendar-app.tsx'),
-      name: 'KingAirCalendar',
+      name: 'JetCalendar',
       formats: ['iife'],
       fileName: () => 'calendar.js',
     },

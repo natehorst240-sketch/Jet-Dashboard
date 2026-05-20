@@ -1,4 +1,4 @@
-name: King Air Due List
+name: Jet Due List
 
 on:
   schedule:
@@ -27,7 +27,7 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Fetch King Air Due List
+      - name: Fetch Jet Due List
         env:
           FLIGHTDOCS_USERNAME: ${{ secrets.FLIGHTDOCS_USERNAME }}
           FLIGHTDOCS_PASSWORD: ${{ secrets.FLIGHTDOCS_PASSWORD }}
@@ -38,7 +38,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: king-air-export-diagnostics
+          name: jet-export-diagnostics
           path: data/debug/
           if-no-files-found: ignore
           retention-days: 7
@@ -60,10 +60,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/king-air-daily-due-list.csv data/king_air_flight_hours_history.json
+          git add data/jet-daily-due-list.csv data/jet_flight_hours_history.json
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: update King Air due list + flight hours history [skip ci]"
+            git commit -m "chore: update Jet due list + flight hours history [skip ci]"
             git push origin HEAD
           fi
