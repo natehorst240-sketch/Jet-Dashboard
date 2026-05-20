@@ -12,11 +12,11 @@ const LOGIN_URL: string =
 
 const DUE_LIST_URL: string =
   process.env.FLIGHTDOCS_DUE_LIST_URL ||
-  'https://app2.flightdocs.com/#/maintenance/item/due-list?IncludePaging=false&SortDirection=1&SortProperty=status&ItemDescriptionConstraint=1&PartNumberConstraint=1&SerialNumberConstraint=1&AdSbNumberConstraint=1&ShowTolerance=false&AircraftIds=4337&AircraftIds=4352&AircraftIds=23824&AircraftIds=17188&AircraftIds=16381&AircraftIds=31883';
+  'https://app2.flightdocs.com/#/maintenance/item/due-list?IncludePaging=false&SortDirection=1&SortProperty=status&ItemDescriptionConstraint=1&PartNumberConstraint=1&SerialNumberConstraint=1&AdSbNumberConstraint=1&ShowTolerance=false&AircraftIds=33484&AircraftIds=35917&AircraftIds=5169&AircraftIds=2386&ProjectedHours=500&ProjectedCycles=1000&OverrideHours&OverrideCycles&OffsetDays=90';
 
 const OUTPUT_PATH: string =
   process.env.FLIGHTDOCS_OUTPUT_PATH ||
-  path.join(process.cwd(), 'data', 'king-air-daily-due-list.csv');
+  path.join(process.cwd(), 'data', 'jet-daily-due-list.csv');
 
 const MAX_ATTEMPTS: number = Number(process.env.FLIGHTDOCS_MAX_ATTEMPTS || 3);
 const HEADLESS: boolean = process.env.FLIGHTDOCS_HEADLESS !== 'false';
