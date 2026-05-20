@@ -7,7 +7,7 @@ Live dashboard: https://natehorst240-sketch.github.io/Jet-Dashboard/
 ```
 Jet-Dashboard/
 ├── data/
-│   ├── jet-daily-due-list.csv               ← Flightdocs daily export
+│   ├── jet-due-list.csv                     ← Flightdocs daily export
 │   └── jet_flight_hours_history.json        ← auto-generated snapshot history
 ├── public/
 │   └── index.html                           ← static dashboard shell

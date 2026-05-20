@@ -19,7 +19,7 @@ from inspection_calendar import compute_projected_events
 # ---- Paths ----------------------------------------------------------------
 BASE_DIR        = Path(__file__).parent.parent
 DATA_DIR        = BASE_DIR / "data"
-DAILY_CSV       = DATA_DIR / "jet-daily-due-list.csv"
+DAILY_CSV       = DATA_DIR / "jet-due-list.csv"
 WEEKLY_CSV      = DATA_DIR / "jet-long-range.csv"
 HISTORY_JSON    = DATA_DIR / "jet_flight_hours_history.json"
 OUTPUT_JSON     = BASE_DIR / "dist" / "data" / "dashboard.json"
