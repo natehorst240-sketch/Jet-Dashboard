@@ -214,7 +214,10 @@ function switchTab(name,btn){
   document.getElementById("tab-"+name).classList.add("active");
   if(name==="utilization") renderUtilization();
   if(name==="components")  renderComponents();
-  if(name==="calendar")    window.dispatchEvent(new Event("resize"));
+  if(name==="calendar"){
+    if(typeof window.mountKingAirCalendar==="function") window.mountKingAirCalendar();
+    window.dispatchEvent(new Event("resize"));
+  }
 }
 function safeStr(x){return(x===null||x===undefined)?"":String(x);}
 function fmtDate(d){if(!d)return"—";const dt=new Date(d+"T00:00:00");if(isNaN(dt))return"—";return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}

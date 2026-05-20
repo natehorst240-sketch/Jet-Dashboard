@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { createRoot } from 'react-dom/client';
+import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 import { WorksCalendar, type WorksCalendarEvent } from 'works-calendar';
 import 'works-calendar/styles';
 import 'works-calendar/styles/aviation';
@@ -48,6 +48,36 @@ type LoadState =
   | { kind: 'loading' }
   | { kind: 'ready'; events: WorksCalendarEvent[]; projected: ProjectedEvent[] }
   | { kind: 'error'; message: string };
+
+class CalendarErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state = { error: null as Error | null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('[king-air-calendar] render error', error, info);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="cal-side-empty" style={{ padding: 16 }}>
+          Calendar render failed: {this.state.error.message}
+          <br />
+          <span style={{ fontSize: 10, color: 'var(--muted)' }}>
+            See browser console for details.
+          </span>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function CalendarApp() {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
@@ -122,13 +152,15 @@ function CalendarApp() {
           <div className="cal-side-empty">Failed to load projection: {state.message}</div>
         )}
         {state.kind === 'ready' && (
-          <WorksCalendar
-            events={state.events}
-            initialView="month"
-            theme="aviation"
-            role="viewer"
-            devMode={false}
-          />
+          <CalendarErrorBoundary>
+            <WorksCalendar
+              events={state.events}
+              initialView="month"
+              theme="aviation"
+              role="viewer"
+              devMode={false}
+            />
+          </CalendarErrorBoundary>
         )}
       </div>
       <aside className="cal-shell-aside">
@@ -150,7 +182,43 @@ function formatDate(ymd: string): string {
   });
 }
 
-const rootEl = document.getElementById('works-calendar-root');
-if (rootEl) {
-  createRoot(rootEl).render(<CalendarApp />);
+// ---------------------------------------------------------------------------
+// Lazy mount. WorksCalendar measures its container on first render; if mounted
+// while the Calendar tab is display:none it sees 0×0 and never recovers, so
+// we hold off until the tab is actually visible (host page calls
+// window.mountKingAirCalendar from switchTab).
+// ---------------------------------------------------------------------------
+
+let root: Root | null = null;
+
+function mountKingAirCalendar(): void {
+  if (root) return;
+  const rootEl = document.getElementById('works-calendar-root');
+  if (!rootEl) {
+    console.warn('[king-air-calendar] mount target #works-calendar-root not found');
+    return;
+  }
+  console.log('[king-air-calendar] mounting');
+  root = createRoot(rootEl);
+  root.render(
+    <CalendarErrorBoundary>
+      <CalendarApp />
+    </CalendarErrorBoundary>,
+  );
+}
+
+declare global {
+  interface Window {
+    mountKingAirCalendar?: () => void;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.mountKingAirCalendar = mountKingAirCalendar;
+  // If the page loads with the Calendar tab already active (e.g. someone deep-
+  // links there later), mount immediately.
+  const tab = document.getElementById('tab-calendar');
+  if (tab && tab.classList.contains('active')) {
+    mountKingAirCalendar();
+  }
 }
