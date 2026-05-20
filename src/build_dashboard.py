@@ -41,6 +41,10 @@ INSPECTION_MAP = {
     "05 12-34":  "Document 34",
     "05 12-21":  "Document 21",
     "04 12-MM":  "Document MM",
+    "21 20-00-201":  "800 Hour",
+    "80 11-00-202":  "ENGINE 600 Hour",
+    "32 00-01-204":  "400 HOUR",
+    "23 71-00-202":  "1200 HOUR",
 }
 
 ATA_PREFIXES = list(INSPECTION_MAP.keys())
