@@ -157,7 +157,7 @@ function CalendarApp() {
               events={state.events}
               initialView="month"
               theme="aviation"
-              role="viewer"
+              role="readonly"
               devMode={false}
             />
           </CalendarErrorBoundary>
