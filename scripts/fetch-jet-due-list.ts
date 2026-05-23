@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import process from 'node:process';
-import { chromium, type Download, type Locator, type Page } from 'playwright';
+import { chromium, type BrowserContext, type Download, type Locator, type Page } from 'playwright';
 import XLSX from 'xlsx';
 
 const LOGIN_URL: string =
@@ -51,6 +51,44 @@ function log(message: string): void {
 
 async function ensureDir(dirPath: string): Promise<void> {
   await fs.mkdir(dirPath, { recursive: true });
+}
+
+// Block Pendo (in-app onboarding guides) from loading at the network layer so
+// its full-page backdrop never appears to intercept clicks on the toolbar.
+async function blockPendo(context: BrowserContext): Promise<void> {
+  await context.route(
+    /(pendo\.io|pendo-static|pendo-io-static|data\.pendo)/i,
+    (route) => route.abort(),
+  );
+}
+
+// Defensive fallback: remove any Pendo overlay nodes that still made it into the
+// DOM. Returns the number of elements removed.
+async function dismissPendoOverlays(page: Page): Promise<number> {
+  try {
+    const removed = await page.evaluate(() => {
+      const selectors = [
+        '#pendo-base',
+        '[id^="pendo-backdrop"]',
+        '[class*="_pendo-backdrop"]',
+        '[class*="_pendo-step-container"]',
+        '[id^="pendo-guide"]',
+        '[class*="pendo-resource-center"]',
+        '[class*="_pendo-badge"]',
+      ];
+      let count = 0;
+      for (const selector of selectors) {
+        document.querySelectorAll(selector).forEach((el) => {
+          el.remove();
+          count += 1;
+        });
+      }
+      return count;
+    });
+    return removed;
+  } catch {
+    return 0;
+  }
 }
 
 async function getLocatorIfPresent(page: Page, selector: string): Promise<Locator | null> {
@@ -230,6 +268,11 @@ async function exportDueList(page: Page): Promise<Download> {
     log('Network did not become fully idle; proceeding anyway');
   }
 
+  const removedOnSettle = await dismissPendoOverlays(page);
+  if (removedOnSettle > 0) {
+    log(`Removed ${removedOnSettle} Pendo overlay node(s) after page settled`);
+  }
+
   const exportSelectors: string[] = [
     'button:has-text("Export")',
     'a:has-text("Export")',
@@ -297,7 +340,15 @@ async function exportDueList(page: Page): Promise<Download> {
           },
         );
 
-        await locator.click({ timeout: 10_000 });
+        await dismissPendoOverlays(page);
+        try {
+          await locator.click({ timeout: 10_000 });
+        } catch (clickErr) {
+          const removed = await dismissPendoOverlays(page);
+          if (removed === 0) throw clickErr;
+          log(`Removed ${removed} Pendo overlay node(s) intercepting Export; retrying click`);
+          await locator.click({ timeout: 10_000 });
+        }
 
         // Actively poll for a submenu item rather than relying on a fixed wait.
         // Stop polling as soon as a submenu is clicked or the download fires
@@ -309,6 +360,7 @@ async function exportDueList(page: Page): Promise<Download> {
           !downloadResolved &&
           Date.now() - submenuStart < submenuPollTimeoutMs
         ) {
+          await dismissPendoOverlays(page);
           for (const subSelector of exportSubMenuSelectors) {
             const subLocator = await getLocatorIfPresent(page, subSelector);
             if (subLocator && (await isClickable(subLocator))) {
@@ -403,6 +455,7 @@ async function runOnce(): Promise<void> {
 
   const browser = await chromium.launch({ headless: HEADLESS });
   const context = await browser.newContext({ acceptDownloads: true });
+  await blockPendo(context);
   const page = await context.newPage();
 
   try {
